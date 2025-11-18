@@ -1,0 +1,727 @@
+/* 全局样式重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #333;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+}
+
+/* 主要内容区域 - 时间和Todo左右布局 */
+.main-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 2rem;
+}
+
+/* 时间显示区域 */
+.time-section {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 1rem;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 时钟容器样式 */
+.clock-container {
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 时钟样式 */
+.clock {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+/* 时钟表盘 */
+.clock-face {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    position: relative;
+}
+
+/* 时钟刻度样式 */
+.clock-mark {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 2px;
+    background: #333;
+    transform-origin: center 100px;
+}
+
+/* 小时刻度 */
+.hour-mark {
+    height: 15px;
+    background: #333;
+    width: 3px;
+    margin-left: -1.5px;
+}
+
+/* 小时刻度位置 */
+.hour-mark.mark-1 { transform: rotate(30deg); }
+.hour-mark.mark-2 { transform: rotate(60deg); }
+.hour-mark.mark-3 { transform: rotate(90deg); }
+.hour-mark.mark-4 { transform: rotate(120deg); }
+.hour-mark.mark-5 { transform: rotate(150deg); }
+.hour-mark.mark-6 { transform: rotate(180deg); }
+.hour-mark.mark-7 { transform: rotate(210deg); }
+.hour-mark.mark-8 { transform: rotate(240deg); }
+.hour-mark.mark-9 { transform: rotate(270deg); }
+.hour-mark.mark-10 { transform: rotate(300deg); }
+.hour-mark.mark-11 { transform: rotate(330deg); }
+.hour-mark.mark-12 { transform: rotate(0deg); }
+
+/* 时钟指针样式 */
+.clock-hand {
+    position: absolute;
+    bottom: 50%;
+    left: 50%;
+    transform-origin: center bottom;
+    background: #333;
+    border-radius: 10px;
+    transition-timing-function: cubic-bezier(0.1, 2.7, 0.58, 1);
+}
+
+/* 时针样式 */
+.hour-hand {
+    width: 6px;
+    height: 60px;
+    margin-left: -3px;
+    background: #333;
+}
+
+/* 分针样式 */
+.minute-hand {
+    width: 4px;
+    height: 80px;
+    margin-left: -2px;
+    background: #555;
+}
+
+/* 秒针样式 */
+.second-hand {
+    width: 2px;
+    height: 90px;
+    margin-left: -1px;
+    background: #e74c3c;
+}
+
+/* 时钟中心点 */
+.clock-center {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #333;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+#current-time {
+    font-size: 4rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+#current-date {
+    font-size: 1.4rem;
+    color: #7f8c8d;
+}
+
+/* 搜索引擎区域 */
+.search-section {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 1rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* 搜索历史记录样式 */
+.search-history {
+    max-width: 100%;
+    margin: 1.5rem 0 0;
+    background: #f5f5f5;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: left;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #ddd;
+}
+
+.history-header span {
+    font-weight: bold;
+    color: #333;
+}
+
+.clear-history-btn {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.clear-history-btn:hover {
+    background: #e0e0e0;
+    color: #333;
+}
+
+.history-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.history-item:hover {
+    background: #e8f4fd;
+}
+
+.engine-tag {
+    background: #3498db;
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-right: 0.5rem;
+    text-transform: capitalize;
+}
+
+.history-query {
+    color: #333;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-empty {
+    text-align: center;
+    color: #999;
+    padding: 1rem;
+    font-style: italic;
+}
+
+.search-form {
+    display: flex;
+    margin-bottom: 20px;
+}
+
+#search-input {
+    flex: 1;
+    padding: 12px 15px;
+    border: 2px solid #ddd;
+    border-radius: 25px 0 0 25px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+#search-input:focus {
+    border-color: #667eea;
+}
+
+.search-button {
+    padding: 12px 25px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 0 25px 25px 0;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s;
+}
+
+.search-button:hover {
+    background: #5a67d8;
+}
+
+.search-engines {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.engine-btn {
+    padding: 8px 15px;
+    background: #ecf0f1;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.engine-btn:hover {
+    background: #667eea;
+    color: white;
+}
+
+.engine-btn.active {
+    background: #667eea;
+    color: white;
+}
+
+/* 下方内容区域 */
+.bottom-section {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+}
+
+/* Todo List 区域 */
+.todo-section {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 1rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    min-width: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 常用网站导航 - 右方 */
+.websites-section {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.websites-section h3 {
+    color: #2c3e50;
+    font-size: 1.4rem;
+}
+
+.add-website-btn {
+    padding: 8px 15px;
+    background: #2ecc71;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s;
+}
+
+.add-website-btn:hover {
+    background: #27ae60;
+}
+
+.websites-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 15px;
+}
+
+.website-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: grab;
+    transition: transform 0.2s, background 0.3s;
+    position: relative;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.website-item:active {
+    cursor: grabbing;
+}
+
+.website-item .drag-handle {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    margin-right: 0;
+    font-size: 10px;
+}
+
+/* 网站项目拖拽状态 */
+.website-item.dragging {
+    opacity: 0.7;
+    transform: scale(1.1) rotate(2deg);
+    background: #d4edda;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+}
+
+.website-item.drag-over {
+    background: #e3f2fd;
+    border: 2px dashed #2196f3;
+}
+
+.website-item:hover {
+    transform: translateY(-5px);
+}
+
+.website-icon {
+    width: 60px;
+    height: 60px;
+    background: #f8f9fa;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 24px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.website-name {
+    font-size: 12px;
+    text-align: center;
+    color: #555;
+}
+
+/* Todo List 区域标题 */
+.todo-section h3 {
+    margin-bottom: 20px;
+    color: #2c3e50;
+    font-size: 1.4rem;
+}
+
+.todo-input-area {
+    display: flex;
+    margin-bottom: 20px;
+}
+
+#todo-input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 2px solid #ddd;
+    border-radius: 25px 0 0 25px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+#todo-input:focus {
+    border-color: #667eea;
+}
+
+#add-todo {
+    padding: 10px 20px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 0 25px 25px 0;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s;
+}
+
+#add-todo:hover {
+    background: #5a67d8;
+}
+
+.todo-list {
+    list-style: none;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.todo-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    transition: background 0.3s, transform 0.2s;
+    cursor: grab;
+}
+
+.todo-item:hover {
+    background: #e9ecef;
+}
+
+.todo-item:active {
+    cursor: grabbing;
+}
+
+/* 拖拽手柄样式 */
+.drag-handle {
+    cursor: grab;
+    color: #666;
+    margin-right: 10px;
+    font-size: 12px;
+    user-select: none;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+
+.todo-item:hover .drag-handle {
+    opacity: 1;
+}
+
+/* 拖拽状态样式 */
+.todo-item.dragging {
+    opacity: 0.7;
+    transform: rotate(2deg) scale(1.02);
+    background: #d4edda;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.todo-item.drag-over {
+    background: #e3f2fd;
+    border: 2px dashed #2196f3;
+    margin-bottom: calc(8px + 2px);
+}
+
+.todo-checkbox {
+    margin-right: 10px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.todo-text {
+    flex: 1;
+    font-size: 16px;
+}
+
+.todo-text.completed {
+    text-decoration: line-through;
+    color: #95a5a6;
+}
+
+.delete-todo {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.delete-todo:hover {
+    background: #c0392b;
+}
+
+/* 模态框样式 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    overflow: auto;
+}
+
+.modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 25px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.close-modal {
+    color: #888;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-modal:hover, .close-modal:focus {
+    color: #000;
+    text-decoration: none;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.save-website-btn {
+    width: 100%;
+    padding: 12px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.save-website-btn:hover {
+    background: #2980b9;
+}
+
+/* 删除网站按钮 */
+.delete-site-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.website-item:hover .delete-site-btn {
+    opacity: 1;
+}
+
+.website-item {
+    position: relative;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .main-content {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .time-section, .search-section {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .bottom-section {
+        flex-direction: column;
+    }
+    
+    .todo-section, .websites-section {
+        width: 100%;
+        margin-bottom: 2rem;
+    }
+    
+    #current-time {
+        font-size: 2.5rem;
+    }
+    
+    #current-date,
+    #lunar-date {
+        font-size: 1rem;
+    }
+    
+    .websites-grid {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    }
+    
+    .website-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+    
+    .modal-content {
+        margin: 30% auto;
+        width: 95%;
+    }
+}
+
+/* 滚动条样式 */
+.todo-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.todo-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.todo-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+.todo-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
