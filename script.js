@@ -304,7 +304,7 @@ let websites = JSON.parse(localStorage.getItem('websites')) || [
     { name: '抖音', url: 'https://www.douyin.com', icon: '🎵' },
     { name: '小红书', url: 'https://www.xiaohongshu.com', icon: '🛒' },
     { name: '网易邮箱', url: 'https://mail.163.com/', icon: '📱' },
-    { name: '思霖的诗词格律自学手册', url: 'https://silinsgh.github.io/Silinsweb/', icon: '❓' }
+    { name: '思霖的诗词格律学习手册', url: 'https://silinsgh.github.io/Silinsweb/', icon: '❓' }
 ];
 
 // 保存网站到localStorage
