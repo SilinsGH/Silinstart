@@ -65,16 +65,40 @@ function renderTodos() {
     const todoList = document.getElementById('todo-list');
     todoList.innerHTML = '';
     
+    // 检查todoItems是否为空
+    if (todoItems.length === 0) {
+        const emptyMessage = document.createElement('li');
+        emptyMessage.className = 'empty-todo-message';
+        emptyMessage.textContent = '暂无任务，去添加一个吧～';
+        todoList.appendChild(emptyMessage);
+        return;
+    }
+    
     todoItems.forEach((item, index) => {
+        // 确保每个todo项都有priority属性，如果没有则默认为medium
+        const priority = item.priority || 'medium';
+        
+        // 获取优先级对应的中文名称
+        const priorityNames = {
+            low: '低优先级',
+            medium: '中优先级',
+            high: '高优先级',
+            urgent: '紧急'
+        };
+        
         const li = document.createElement('li');
         li.className = 'todo-item';
         li.draggable = true;
         li.dataset.index = index;
+        li.dataset.priority = priority;
         
         li.innerHTML = `
             <span class="drag-handle">⋮⋮</span>
             <input type="checkbox" class="todo-checkbox" data-index="${index}" ${item.completed ? 'checked' : ''}>
-            <span class="todo-text ${item.completed ? 'completed' : ''}">${item.text}</span>
+            <span class="todo-text ${item.completed ? 'completed' : ''}">
+                ${item.text}
+                <span class="priority-tag priority-${priority}">${priorityNames[priority]}</span>
+            </span>
             <button class="delete-todo" data-index="${index}">删除</button>
         `;
         
@@ -152,10 +176,12 @@ function handleTodoDragEnd() {
 // 添加新的Todo
 function addTodo() {
     const input = document.getElementById('todo-input');
+    const prioritySelect = document.getElementById('priority-select');
     const text = input.value.trim();
+    const priority = prioritySelect.value || 'medium';
     
     if (text) {
-        todoItems.push({ text, completed: false });
+        todoItems.push({ text, completed: false, priority });
         saveTodos();
         renderTodos();
         input.value = '';

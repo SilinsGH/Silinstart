@@ -4,10 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>思霖起始页</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="styles.css">
+    <!-- 引入Vue.js 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 <body>
-    <div class="container">
+    <!-- Vue应用的挂载点 -->
+    <div id="app" class="container">
         <!-- 主要内容区域 - 时间和Todo左右排列 -->
     <div class="main-content">
         <!-- 时间显示区域 -->
@@ -47,6 +51,12 @@
             <h3>Todo List</h3>
             <div class="todo-input-area">
                 <input type="text" id="todo-input" placeholder="添加新任务..." autocomplete="off">
+                <select id="priority-select" class="priority-select">
+                    <option value="low">低优先级</option>
+                    <option value="medium" selected>中优先级</option>
+                    <option value="high">高优先级</option>
+                    <option value="urgent">紧急</option>
+                </select>
                 <button id="add-todo">添加</button>
             </div>
             <ul id="todo-list" class="todo-list">
@@ -115,7 +125,13 @@
             </form>
         </div>
     </div>
+    
+    <!-- 设置按钮 -->
+    <div class="settings-button-container">
+        <button id="settings-button" class="settings-button">⚙️</button>
+    </div>
 
-    <script src="script.js"></script>
+    <!-- 新的Vue应用脚本 -->
+    <script src="vue-app.js"></script>
 </body>
 </html>
