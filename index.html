@@ -7,128 +7,14 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="styles.css">
     <!-- 引入Vue.js 3 CDN -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.js"></script>
 </head>
 <body>
-    <!-- Vue应用的挂载点 -->
+    <!-- Vue应用的挂载点 - 简化结构，让Vue组件处理所有内容 -->
     <div id="app" class="container">
-        <!-- 主要内容区域 - 时间和Todo左右排列 -->
-    <div class="main-content">
-        <!-- 时间显示区域 -->
-        <div class="time-section">
-            <!-- 时钟元素 -->
-            <div class="clock-container">
-                <div class="clock">
-                    <div class="clock-face">
-                        <!-- 时钟刻度 -->
-                        <div class="clock-mark hour-mark mark-1"></div>
-                        <div class="clock-mark hour-mark mark-2"></div>
-                        <div class="clock-mark hour-mark mark-3"></div>
-                        <div class="clock-mark hour-mark mark-4"></div>
-                        <div class="clock-mark hour-mark mark-5"></div>
-                        <div class="clock-mark hour-mark mark-6"></div>
-                        <div class="clock-mark hour-mark mark-7"></div>
-                        <div class="clock-mark hour-mark mark-8"></div>
-                        <div class="clock-mark hour-mark mark-9"></div>
-                        <div class="clock-mark hour-mark mark-10"></div>
-                        <div class="clock-mark hour-mark mark-11"></div>
-                        <div class="clock-mark hour-mark mark-12"></div>
-                        <!-- 时钟指针 -->
-                        <div class="clock-hand hour-hand" id="hour-hand"></div>
-                        <div class="clock-hand minute-hand" id="minute-hand"></div>
-                        <div class="clock-hand second-hand" id="second-hand"></div>
-                        <!-- 时钟中心点 -->
-                        <div class="clock-center"></div>
-                    </div>
-                </div>
-            </div>
-            <div id="current-time"></div>
-            <div id="current-date"></div>
-        </div>
-
-        <!-- Todo List 区域 -->
-        <div class="todo-section">
-            <h3>Todo List</h3>
-            <div class="todo-input-area">
-                <input type="text" id="todo-input" placeholder="添加新任务..." autocomplete="off">
-                <select id="priority-select" class="priority-select">
-                    <option value="low">低优先级</option>
-                    <option value="medium" selected>中优先级</option>
-                    <option value="high">高优先级</option>
-                    <option value="urgent">紧急</option>
-                </select>
-                <button id="add-todo">添加</button>
-            </div>
-            <ul id="todo-list" class="todo-list">
-                <!-- Todo 项将通过JavaScript动态生成 -->
-            </ul>
-        </div>
-    </div>
-
-        <!-- 下方内容区域 -->
-        <div class="bottom-section">
-            <!-- 搜索引擎区域 -->
-            <div class="search-section">
-                <form id="search-form" class="search-form">
-                    <input type="text" id="search-input" placeholder="搜索..." autocomplete="off">
-                    <button type="submit" class="search-button">搜索</button>
-                </form>
-                <div class="search-engines">
-                    <button class="engine-btn" data-engine="baidu">百度</button>
-                    <button class="engine-btn" data-engine="google">Google</button>
-                    <button class="engine-btn" data-engine="bing">Bing</button>
-                </div>
-                <!-- 搜索历史记录 -->
-                <div class="search-history">
-                    <div class="history-header">
-                        <span>搜索历史</span>
-                        <button id="clear-history" class="clear-history-btn">清空</button>
-                    </div>
-                    <div id="history-list" class="history-list">
-                        <!-- 搜索历史记录将在这里动态显示 -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- 常用网站导航 - 右方 -->
-            <div class="websites-section">
-                <div class="section-header">
-                    <h3>常用网站</h3>
-                    <button id="add-website-btn" class="add-website-btn">+ 添加</button>
-                </div>
-                <div class="websites-grid" id="websites-grid">
-                    <!-- 网站图标将通过JavaScript动态生成 -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 添加网站模态框 -->
-    <div id="add-website-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h3>添加新网站</h3>
-            <form id="add-website-form">
-                <div class="form-group">
-                    <label for="website-name">网站名称</label>
-                    <input type="text" id="website-name" placeholder="例如：百度">
-                </div>
-                <div class="form-group">
-                    <label for="website-url">网站URL</label>
-                    <input type="text" id="website-url" placeholder="例如：https://www.baidu.com">
-                </div>
-                <div class="form-group">
-                    <label for="website-icon">网站图标</label>
-                    <input type="text" id="website-icon" placeholder="例如：🔍 或 百">
-                </div>
-                <button type="submit" class="save-website-btn">保存</button>
-            </form>
-        </div>
+        <!-- Vue应用将在这里渲染所有内容 -->
     </div>
     
-    <!-- 设置按钮 -->
-    
-
     <!-- 新的Vue应用脚本 -->
     <script src="vue-app.js"></script>
 </body>

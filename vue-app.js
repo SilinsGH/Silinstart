@@ -143,13 +143,18 @@ const PomodoroComponent = {
       </div>
       
       <div class="pomodoro-settings">
-        <div class="setting-group">
+        <div class="setting-group" v-if="currentMode === 'work'">
           <label>工作时长(分钟):</label>
           <input type="number" v-model.number="workMinutes" min="1" max="60" @change="updateWorkTime">
         </div>
-        <div class="setting-group">
+        <div class="setting-group" v-if="currentMode === 'break'">
           <label>休息时长(分钟):</label>
           <input type="number" v-model.number="breakMinutes" min="1" max="30" @change="updateBreakTime">
+        </div>
+        <!-- 今日专注时长显示 -->
+        <div class="focus-time-display">
+          <label>今日专注时长:</label>
+          <span class="today-focus-time">{{ formattedFocusTime }}</span>
         </div>
       </div>
     </div>
@@ -169,11 +174,47 @@ const PomodoroComponent = {
       };
     };
 
+    // 获取当前日期字符串 YYYY-MM-DD
+    const getCurrentDateString = () => {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    // 加载今日专注时长
+    const loadTodayFocusTime = () => {
+      const dateKey = getCurrentDateString();
+      const savedData = localStorage.getItem('pomodoroFocusTime');
+      if (savedData) {
+        const focusData = JSON.parse(savedData);
+        return focusData[dateKey] || 0;
+      }
+      return 0;
+    };
+
+    // 保存今日专注时长
+    const saveTodayFocusTime = (seconds) => {
+      const dateKey = getCurrentDateString();
+      const savedData = localStorage.getItem('pomodoroFocusTime');
+      let focusData = {};
+      
+      if (savedData) {
+        focusData = JSON.parse(savedData);
+      }
+      
+      focusData[dateKey] = seconds;
+      localStorage.setItem('pomodoroFocusTime', JSON.stringify(focusData));
+    };
+
     const settings = loadSettings();
     const currentMode = ref(settings.currentMode || 'work'); // 'work' 或 'break'
     const isRunning = ref(false);
     const workMinutes = ref(settings.workMinutes || 25);
     const breakMinutes = ref(settings.breakMinutes || 5);
+    const todayFocusSeconds = ref(loadTodayFocusTime());
+    const lastFocusUpdateTime = ref(null);
     
     // 初始化时间
     const timeLeft = ref(currentMode.value === 'work' ? workMinutes.value * 60 : breakMinutes.value * 60);
@@ -190,11 +231,35 @@ const PomodoroComponent = {
       localStorage.setItem('pomodoroSettings', JSON.stringify(settingsToSave));
     };
 
+    // 更新专注时长
+    const updateFocusTime = () => {
+      if (isRunning.value && currentMode.value === 'work' && lastFocusUpdateTime.value) {
+        const now = Date.now();
+        const elapsedSeconds = Math.floor((now - lastFocusUpdateTime.value) / 1000);
+        if (elapsedSeconds > 0) {
+          todayFocusSeconds.value += elapsedSeconds;
+          lastFocusUpdateTime.value = now;
+        }
+      }
+    };
+
     // 格式化时间显示
     const formattedTime = computed(() => {
       const minutes = Math.floor(timeLeft.value / 60);
       const seconds = timeLeft.value % 60;
       return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    });
+
+    // 格式化专注时长显示
+    const formattedFocusTime = computed(() => {
+      const hours = Math.floor(todayFocusSeconds.value / 3600);
+      const minutes = Math.floor((todayFocusSeconds.value % 3600) / 60);
+      
+      if (hours > 0) {
+        return `${hours}小时${minutes}分钟`;
+      } else {
+        return `${minutes}分钟`;
+      }
     });
 
     // 计算进度百分比
@@ -224,9 +289,14 @@ const PomodoroComponent = {
     const toggleTimer = () => {
       if (!isRunning.value) {
         isRunning.value = true;
+        lastFocusUpdateTime.value = Date.now();
         timerInterval = setInterval(() => {
           if (timeLeft.value > 0) {
             timeLeft.value--;
+            // 每秒更新一次专注时长
+            if (currentMode.value === 'work') {
+              updateFocusTime();
+            }
           } else {
             // 时间到，切换模式
             switchMode();
@@ -239,6 +309,8 @@ const PomodoroComponent = {
     const pauseTimer = () => {
       if (isRunning.value) {
         isRunning.value = false;
+        updateFocusTime(); // 暂停时保存最后的专注时长
+        saveTodayFocusTime(todayFocusSeconds.value);
         clearInterval(timerInterval);
       }
     };
@@ -263,8 +335,14 @@ const PomodoroComponent = {
       saveSettings();
     };
 
+    onMounted(() => {
+      // 组件挂载时加载今日专注时长
+      todayFocusSeconds.value = loadTodayFocusTime();
+    });
+
     onUnmounted(() => {
       if (timerInterval) {
+        pauseTimer(); // 确保在组件卸载前保存专注时长
         clearInterval(timerInterval);
       }
     });
@@ -275,7 +353,9 @@ const PomodoroComponent = {
       timeLeft,
       workMinutes,
       breakMinutes,
+      todayFocusSeconds,
       formattedTime,
+      formattedFocusTime,
       progressPercentage,
       toggleTimer,
       pauseTimer,
@@ -317,40 +397,78 @@ const TodoListComponent = {
           <button id="add-todo" @click="addTodo">添加</button>
         </div>
       </div>
-      <ul id="todo-list" class="todo-list">
+      <div 
+        id="todo-list" 
+        class="todo-list"
+        ref="virtualListContainer"
+        @scroll="handleScroll"
+      >
         <!-- 空列表提示 -->
         <li v-if="todoItems.length === 0" class="empty-todo-message">
           暂无任务，去添加一个吧～
         </li>
-        <!-- Todo 项 -->
-        <li 
-          v-for="(item, index) in todoItems" 
-          :key="index"
-          class="todo-item"
-          :data-index="index"
-          :data-priority="item.priority || 'medium'"
-          draggable="true"
-          @dragstart="handleTodoDragStart(index)"
-          @dragover.prevent
-          @drop="handleTodoDrop(index)"
-          @dragend="handleTodoDragEnd"
+        <!-- 虚拟滚动容器 -->
+        <div 
+          v-else
+          class="virtual-list-container"
+          :style="{ height: totalHeight + 'px', position: 'relative' }"
         >
-          <span class="drag-handle">⋮⋮</span>
-          <input 
-            type="checkbox" 
-            class="todo-checkbox"
-            :checked="item.completed"
-            @change="toggleTodo(index)"
-          >
-          <span class="todo-text" :class="{ completed: item.completed }">
-            {{ item.text }}
-            <span class="priority-tag" :class="'priority-' + (item.priority || 'medium')">
-              {{ getPriorityName(item.priority || 'medium') }}
-            </span>
-          </span>
-          <button class="delete-todo" @click="deleteTodo(index)">删除</button>
-        </li>
-      </ul>
+          <!-- 渲染可见区域的todo项 -->
+            <div 
+              class="visible-items"
+              :style="{ transform: 'translateY(' + offsetY + 'px)', position: 'absolute', width: '100%' }"
+            >
+            <!-- Todo 项 -->
+            <li 
+              v-for="(item, virtualIndex) in visibleItems" 
+              :key="item._id || virtualIndex"
+              class="todo-item"
+              :data-index="startIndex + virtualIndex"
+              :data-priority="item.priority || 'medium'"
+              draggable="true"
+              @dragstart="handleTodoDragStart(startIndex + virtualIndex)"
+              @dragover="handleDragOver($event, startIndex + virtualIndex)"
+              @drop="handleTodoDrop(startIndex + virtualIndex)"
+              @dragend="handleTodoDragEnd"
+            >
+              <span class="drag-handle">⋮⋮</span>
+              <input 
+                type="checkbox" 
+                class="todo-checkbox"
+                :checked="item.completed"
+                @change="toggleTodo(startIndex + virtualIndex)"
+              >
+              <!-- 正常显示模式 -->
+                <span 
+                  v-if="editingIndex !== startIndex + virtualIndex"
+                  class="todo-text" 
+                  :class="{ completed: item.completed }"
+                  @dblclick="startEditing(startIndex + virtualIndex)"
+                >
+                  {{ item.text }}
+                  <span class="priority-tag" :class="'priority-' + (item.priority || 'medium')">
+                    {{ getPriorityName(item.priority || 'medium') }}
+                  </span>
+                </span>
+                <!-- 编辑模式 -->
+                <div v-else class="todo-edit">
+                  <input 
+                    type="text" 
+                    v-model="editingText" 
+                    class="todo-edit-input"
+                    @keyup.enter="saveEdit"
+                    @keyup.esc="cancelEdit"
+                    ref="editInput"
+                    @click.stop
+                  >
+                  <button class="save-edit-btn" @click="saveEdit">保存</button>
+                  <button class="cancel-edit-btn" @click="cancelEdit">取消</button>
+                </div>
+              <button class="delete-todo" @click="deleteTodo(startIndex + virtualIndex)">删除</button>
+            </li>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   setup() {
@@ -359,6 +477,52 @@ const TodoListComponent = {
     const newTodoText = ref('');
     const newTodoPriority = ref('medium');
     let draggedTodoIndex = null;
+    // 编辑状态管理
+    const editingIndex = ref(null);
+    const editingText = ref('');
+    
+    // 虚拟滚动相关状态
+    const virtualListContainer = ref(null);
+    const itemHeight = 60; // 每个todo项的固定高度
+    const scrollTop = ref(0);
+    const visibleCount = ref(10); // 可见项数量
+    const bufferSize = ref(5); // 缓冲区大小
+    
+    // 计算总高度
+    const totalHeight = computed(() => {
+      return todoItems.value.length * itemHeight;
+    });
+    
+    // 计算起始索引
+    const startIndex = computed(() => {
+      return Math.max(0, Math.floor(scrollTop.value / itemHeight) - bufferSize.value);
+    });
+    
+    // 计算结束索引
+    const endIndex = computed(() => {
+      return Math.min(
+        todoItems.value.length,
+        Math.ceil((scrollTop.value + virtualListContainer.value?.clientHeight || 300) / itemHeight) + bufferSize.value
+      );
+    });
+    
+    // 计算可见项
+    const visibleItems = computed(() => {
+      return todoItems.value.slice(startIndex.value, endIndex.value).map((item, index) => ({
+        ...item,
+        _id: startIndex.value + index // 为每个项添加唯一ID
+      }));
+    });
+    
+    // 计算偏移量
+    const offsetY = computed(() => {
+      return startIndex.value * itemHeight;
+    });
+    
+    // 处理滚动事件
+    const handleScroll = (event) => {
+      scrollTop.value = event.target.scrollTop;
+    }
 
     // 优先级名称映射
     const priorityNames = {
@@ -402,13 +566,73 @@ const TodoListComponent = {
       todoItems.value.splice(index, 1);
       saveTodos();
     };
+    
+    // 开始编辑
+    const startEditing = (index) => {
+      editingIndex.value = index;
+      editingText.value = todoItems.value[index].text;
+      
+      // 虚拟滚动适配：确保编辑项可见
+      if (virtualListContainer.value) {
+        const containerHeight = virtualListContainer.value.clientHeight;
+        const itemPosition = index * itemHeight;
+        const scrollTop = virtualListContainer.value.scrollTop;
+        
+        // 检查是否在可见区域内，如果不在则滚动
+        if (itemPosition < scrollTop || itemPosition > scrollTop + containerHeight - itemHeight) {
+          // 滚动到项目位置，保持在容器中间
+          virtualListContainer.value.scrollTop = itemPosition - containerHeight / 2 + itemHeight / 2;
+        }
+      }
+      
+      // 确保输入框在DOM更新后自动聚焦
+      setTimeout(() => {
+        const editInput = document.querySelector('.todo-edit-input');
+        if (editInput) {
+          editInput.focus();
+        }
+      }, 0);
+    };
+    
+    // 保存编辑
+    const saveEdit = () => {
+      if (editingIndex.value !== null && editingText.value.trim()) {
+        todoItems.value[editingIndex.value].text = editingText.value.trim();
+        saveTodos();
+      }
+      cancelEdit();
+    };
+    
+    // 取消编辑
+    const cancelEdit = () => {
+      editingIndex.value = null;
+      editingText.value = '';
+    };
 
     // Todo拖拽开始
     const handleTodoDragStart = (index) => {
       draggedTodoIndex = index;
       setTimeout(() => {
-        event.target.classList.add('dragging');
+        const todoElements = document.querySelectorAll('.todo-item');
+        todoElements.forEach(el => {
+          if (parseInt(el.dataset.index) === index) {
+            el.classList.add('dragging');
+          }
+        });
       }, 0);
+    };
+
+    // 添加拖拽悬停处理
+    const handleDragOver = (event, index) => {
+      event.preventDefault();
+      // 移除所有drag-over类
+      document.querySelectorAll('.todo-item').forEach(item => {
+        item.classList.remove('drag-over');
+      });
+      // 为当前项添加drag-over类
+      if (event.target.closest('.todo-item')) {
+        event.target.closest('.todo-item').classList.add('drag-over');
+      }
     };
 
     // Todo拖拽放置
@@ -420,14 +644,24 @@ const TodoListComponent = {
         // 从原位置移除
         todoItems.value.splice(draggedTodoIndex, 1);
         
-        // 插入到新位置
-        todoItems.value.splice(targetIndex, 0, draggedItem);
+        // 插入到新位置（需要调整目标索引，如果拖拽项在目标项前面）
+        const adjustedTargetIndex = draggedTodoIndex < targetIndex ? targetIndex - 1 : targetIndex;
+        todoItems.value.splice(adjustedTargetIndex, 0, draggedItem);
         
         // 保存
         saveTodos();
+        
+        // 重新计算滚动位置，确保拖拽后的项目可见
+        if (virtualListContainer.value) {
+          const newScrollPosition = Math.min(
+            adjustedTargetIndex * itemHeight,
+            Math.max(0, totalHeight.value - virtualListContainer.value.clientHeight)
+          );
+          virtualListContainer.value.scrollTop = newScrollPosition;
+        }
       }
       
-      // 移除所有drag-over类
+      // 移除所有drag-over和dragging类
       document.querySelectorAll('.todo-item').forEach(item => {
         item.classList.remove('drag-over', 'dragging');
       });
@@ -445,13 +679,26 @@ const TodoListComponent = {
       todoItems,
       newTodoText,
       newTodoPriority,
+      editingIndex,
+      editingText,
+      virtualListContainer,
+      totalHeight,
+      startIndex,
+      endIndex,
+      visibleItems,
+      offsetY,
       addTodo,
       toggleTodo,
       deleteTodo,
       handleTodoDragStart,
+      handleDragOver,
       handleTodoDrop,
       handleTodoDragEnd,
-      getPriorityName
+      handleScroll,
+      getPriorityName,
+      startEditing,
+      saveEdit,
+      cancelEdit
     };
   }
 };
@@ -614,7 +861,20 @@ const StickyNotesComponent = {
       <!-- 便签栏内容 -->
       <div class="notes-content">
         <div class="notes-header">
-          <button class="add-note-btn" @click="addNewNote">+ 新建便签</button>
+          <button class="add-note-btn" @click="showColorPicker = true">+ 新建便签</button>
+          
+          <!-- 颜色选择器 -->
+          <div v-if="showColorPicker" class="color-picker-popup">
+            <div 
+              v-for="color in colorOptions" 
+              :key="color.value"
+              class="color-option"
+              :style="{ backgroundColor: color.value }"
+              @click="addNewNoteWithColor(color.value)"
+              :title="color.name"
+            ></div>
+            <button class="close-color-picker" @click="showColorPicker = false">×</button>
+          </div>
         </div>
         
         <div class="notes-container">
@@ -622,13 +882,39 @@ const StickyNotesComponent = {
             暂无便签，点击添加按钮创建
           </div>
           <div 
-            v-for="(note, index) in notes" 
-            :key="index"
-            class="note-item"
-          >
+                  v-for="(note, index) in notes" 
+                  :key="index"
+                  class="note-item"
+                  :class="['note-' + (note.color || 'yellow')]"
+                >
             <div class="note-header">
               <span class="note-date">{{ formatDate(note.createdAt) }}</span>
-              <button class="delete-note-btn" @click="deleteNote(index)">×</button>
+              <div class="note-actions">
+                <!-- 颜色选择按钮 -->
+                <button 
+                  class="color-select-btn"
+                  @click="toggleColorMenu(index)"
+                  :title="'修改颜色'"
+                >
+                  🎨
+                </button>
+                <!-- 颜色菜单 -->
+                <div 
+                  v-if="colorMenuVisible === index" 
+                  class="color-menu"
+                >
+                  <div 
+                    v-for="color in colorOptions" 
+                    :key="color.value"
+                    class="color-menu-option"
+                    :style="{ backgroundColor: color.value }"
+                    :class="{ 'selected': note.color === color.value }"
+                    @click="changeNoteColor(index, color.value)"
+                  ></div>
+                </div>
+                <!-- 删除按钮 -->
+                <button class="delete-note-btn" @click="deleteNote(index)">×</button>
+              </div>
             </div>
             <textarea 
               v-model="note.content"
@@ -643,6 +929,17 @@ const StickyNotesComponent = {
   `,
   setup() {
     const isVisible = ref(false);
+    const showColorPicker = ref(false);
+    const colorMenuVisible = ref(-1);
+    
+    // 颜色选项
+    const colorOptions = [
+      { name: '黄色', value: 'yellow' },
+      { name: '蓝色', value: 'blue' },
+      { name: '绿色', value: 'green' },
+      { name: '粉色', value: 'pink' },
+      { name: '紫色', value: 'purple' }
+    ];
     
     // 显示便签栏
     const showNotes = () => {
@@ -668,14 +965,33 @@ const StickyNotesComponent = {
     // 初始化便签数据 - 后续会从本地存储加载
     const notes = ref([]);
     
-    // 添加新便签
-    const addNewNote = () => {
+    // 添加新便签（带颜色）
+    const addNewNoteWithColor = (color) => {
       const newNote = {
         content: '',
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        color: color
       };
       notes.value.unshift(newNote);
       saveNotesToStorage();
+      showColorPicker.value = false;
+    };
+    
+    // 显示颜色选择器
+    const addNewNote = () => {
+      showColorPicker.value = true;
+    };
+    
+    // 切换颜色菜单
+    const toggleColorMenu = (index) => {
+      colorMenuVisible.value = colorMenuVisible.value === index ? -1 : index;
+    };
+    
+    // 修改便签颜色
+    const changeNoteColor = (index, color) => {
+      notes.value[index].color = color;
+      saveNotesToStorage();
+      colorMenuVisible.value = -1;
     };
     
     // 删除便签
@@ -700,6 +1016,12 @@ const StickyNotesComponent = {
       if (savedNotes) {
         try {
           notes.value = JSON.parse(savedNotes);
+          // 为旧数据添加默认颜色
+          notes.value.forEach(note => {
+            if (!note.color) {
+              note.color = 'yellow';
+            }
+          });
         } catch (error) {
           console.error('加载便签数据失败:', error);
         }
@@ -711,6 +1033,24 @@ const StickyNotesComponent = {
       loadNotesFromStorage();
     });
     
+    // 点击外部关闭颜色菜单
+    onMounted(() => {
+      document.addEventListener('click', (event) => {
+        const isColorPicker = event.target.closest('.color-picker-popup');
+        const isColorMenu = event.target.closest('.color-menu');
+        const isColorBtn = event.target.closest('.color-select-btn');
+        const isAddNoteBtn = event.target.closest('.add-note-btn');
+        
+        if (!isColorPicker && !isAddNoteBtn) {
+          showColorPicker.value = false;
+        }
+        
+        if (!isColorMenu && !isColorBtn) {
+          colorMenuVisible.value = -1;
+        }
+      });
+    });
+    
     return {
       isVisible,
       notes,
@@ -718,8 +1058,14 @@ const StickyNotesComponent = {
       hideNotes,
       formatDate,
       addNewNote,
+      addNewNoteWithColor,
       deleteNote,
-      updateNote
+      updateNote,
+      showColorPicker,
+      colorOptions,
+      colorMenuVisible,
+      toggleColorMenu,
+      changeNoteColor
     };
   }
 };
@@ -774,7 +1120,7 @@ const WebsitesComponent = {
             </div>
             <div class="form-group">
               <label for="website-icon">网站图标</label>
-              <input type="text" v-model="newWebsite.icon" id="website-icon" placeholder="例如：🔍 或 百">
+              <input type="text" v-model="newWebsite.icon" id="website-icon" placeholder="例如：🌐 或 百">
             </div>
             <button type="submit" class="save-website-btn">保存</button>
           </form>
@@ -1121,12 +1467,26 @@ const SettingsComponent = {
     const fileInput = ref(null);
     
     // 应用信息
-    const appVersion = '1.2.0';
+    const appVersion = '1.2.1';
     const appAuthor = '思霖';
-    const lastUpdated = '2025-11-19';
+    const lastUpdated = '2025-11-22';
     
     // 更新日志数据
     const changelog = [
+      {
+        version: '1.2.1',
+        date: '2025-11-22',
+        changes: [
+          { text: '📝 Todo编辑功能：双击待办事项进入编辑模式，支持回车保存、ESC取消' },
+          { text: '🎨 便签颜色自定义：每个便签支持5种颜色主题，随时切换分类管理' },
+          { text: '⏱️ 今日专注时长：番茄钟新增当日累计专注统计，自动持久化保存' },
+          { text: '⚡ 虚拟滚动优化：Todo列表采用虚拟滚动，百条任务依旧流畅' },
+          { text: '🚀 GPU硬件加速：拖拽元素和便签卡片添加transform3d优化' },
+          { text: '🎨 颜色选择器：便签颜色选择支持弹出层和菜单模式，点击外部自动关闭' },
+          { text: '📱 响应式优化：改善移动端便签栏触发区域，调整小屏幕下设置项排列' },
+          { text: '🔧 技术重构：全面启用Vue 3 ref和computed，组件通信标准化' }
+        ]
+      },
       {
         version: '1.2.0',
         date: '2025-11-19',
