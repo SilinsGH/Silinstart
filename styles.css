@@ -322,41 +322,53 @@ body {
 }
 
 /* 暗色主题更新日志样式 */
+.dark-mode .changelog-item,
+.dark-mode .changelog-header,
+.dark-mode .modal-header,
+.dark-mode .modal-tabs {
+  border-color: #333;
+}
+
 .dark-mode .changelog-item {
   background-color: rgba(49, 49, 49, 0.8);
-  border: 1px solid #333;
+  border-style: solid;
+  border-width: 1px;
 }
 
-.dark-mode .changelog-header {
-  border-bottom: 1px solid #333;
-}
-
-.dark-mode .version-number {
+.dark-mode .version-number,
+.dark-mode .tab-btn.active {
   color: #66bb6a;
 }
 
-.dark-mode .version-date {
+.dark-mode .version-date,
+.dark-mode .empty-changelog,
+.dark-mode .section-desc,
+.dark-mode .action-desc,
+.dark-mode .close-modal,
+.dark-mode .tab-btn {
   color: #999;
 }
 
-.dark-mode .change-text {
+.dark-mode .change-text,
+.dark-mode .modal-header h3,
+.dark-mode .section-title h4,
+.dark-mode .app-info h4 {
   color: #e0e0e0;
-}
-
-.dark-mode .empty-changelog {
-  color: #999;
 }
 
 .dark-mode .changelog-container::-webkit-scrollbar-track {
   background: #333;
 }
 
-.dark-mode .changelog-container::-webkit-scrollbar-thumb {
-  background: #999;
+.dark-mode .changelog-container::-webkit-scrollbar-thumb,
+.dark-mode .close-modal:hover,
+.dark-mode .tab-btn:hover {
+  background: #e0e0e0;
 }
 
-.dark-mode .changelog-container::-webkit-scrollbar-thumb:hover {
-  background: #e0e0e0;
+.dark-mode .close-modal:hover,
+.dark-mode .tab-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* 模态框内容区 */
@@ -529,14 +541,16 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* 设置功能深色模式样式 */
-.dark-mode .settings-btn {
+/* 合并暗色模式下的设置按钮和主题切换按钮样式 */
+.dark-mode .settings-btn,
+.dark-mode .theme-toggle {
     background: rgba(50, 50, 50, 0.8);
     color: #e0e0e0;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-.dark-mode .settings-btn:hover {
+.dark-mode .settings-btn:hover,
+.dark-mode .theme-toggle:hover {
     background: rgba(60, 60, 60, 0.9);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
 }
@@ -659,12 +673,14 @@ body {
 }
 
 /* 暗色主题容器和内容区域样式 */
-.dark-mode .main-content {
-    color: #e0e0e0;
+.dark-mode .main-content,
+.dark-mode .todo-section h3,
+.dark-mode .websites-section h3 {
+  color: #e0e0e0;
 }
 
 .dark-mode h3 {
-    color: #ffffff;
+  color: #ffffff;
 }
 
 /* 时间显示区域 */
@@ -808,38 +824,27 @@ body {
 }
 
 /* 时钟组件暗色主题样式 */
-.dark-mode .time-section {
-    background: rgba(33, 33, 33, 0.7);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+.dark-mode .time-section,
+.dark-mode .clock {
+  background: rgba(33, 33, 33, 0.7);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .dark-mode .clock {
-    background: rgba(33, 33, 33, 0.8);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  background: rgba(33, 33, 33, 0.8);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-.dark-mode .clock-mark {
-    background: #e0e0e0;
-}
-
-.dark-mode .hour-mark {
-    background: #e0e0e0;
-}
-
-.dark-mode .clock-hand {
-    background: #e0e0e0;
-}
-
-.dark-mode .hour-hand {
-    background: #e0e0e0;
+.dark-mode .clock-mark,
+.dark-mode .hour-mark,
+.dark-mode .clock-hand,
+.dark-mode .hour-hand,
+.dark-mode .clock-center {
+  background: #e0e0e0;
 }
 
 .dark-mode .minute-hand {
-    background: #b0b0b0;
-}
-
-.dark-mode .clock-center {
-    background: #e0e0e0;
+  background: #b0b0b0;
 }
 
 .dark-mode #current-time {
@@ -946,7 +951,6 @@ body {
     text-align: center;
     color: #999;
     padding: 1rem;
-    font-style: italic;
 }
 
 .search-form {
@@ -1040,6 +1044,25 @@ body {
     transform: translate3d(0, 0, 0); /* 启用GPU渲染 */
 }
 
+/* 确保todo-item有固定高度以支持虚拟滚动 */
+.todo-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    cursor: grab;
+    border-left: 4px solid transparent;
+    height: 60px;
+    box-sizing: border-box;
+    transform: translate3d(0, 0, 0); /* 启用GPU渲染 */
+}
+
 /* 番茄钟样式 */
 .pomodoro-section {
     background-color: rgba(255, 255, 255, 0.8);
@@ -1121,11 +1144,11 @@ body {
     font-size: 14px;
     font-weight: 500;
     transition: all 0.2s;
+    color: white;
 }
 
 .start-btn {
     background-color: #27ae60;
-    color: white;
 }
 
 .start-btn:hover:not(:disabled) {
@@ -1134,7 +1157,6 @@ body {
 
 .pause-btn {
     background-color: #f39c12;
-    color: white;
 }
 
 .pause-btn:hover:not(:disabled) {
@@ -1143,7 +1165,6 @@ body {
 
 .reset-btn {
     background-color: #95a5a6;
-    color: white;
 }
 
 .reset-btn:hover {
@@ -1218,13 +1239,12 @@ body {
         font-size: 14px;
     }
 
-/* 深色模式下的番茄钟样式 */
+/* 深色模式下的番茄钟和相关样式 */
 .dark-mode .pomodoro-section {
     background-color: rgba(45, 55, 72, 0.8);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
-/* 深色模式下专注时长显示样式 */
 .dark-mode .focus-time-display {
     background-color: rgba(60, 70, 85, 0.7);
     color: #999;
@@ -1234,11 +1254,12 @@ body {
     color: #64b5f6;
 }
 
-.dark-mode .pomodoro-header h4 {
-    color: #e0e0e0;
-}
-
-.dark-mode .timer-display {
+/* 合并暗色模式下的标题和内容文本样式 */
+.dark-mode .modal-header h3,
+.dark-mode .pomodoro-header h4,
+.dark-mode .timer-display,
+.dark-mode .section-title h4,
+.dark-mode .feature-list h5 {
     color: #e0e0e0;
 }
 
@@ -1257,7 +1278,6 @@ body {
 .dark-mode .setting-group input {
     background-color: #444;
     border: 1px solid #555;
-    color: #e0e0e0;
 }
 
 /* 常用网站导航 - 右方 */
@@ -1487,25 +1507,6 @@ body {
     width: 100%;
 }
 
-/* 确保todo-item有固定高度以支持虚拟滚动 */
-.todo-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    margin-bottom: 8px;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    cursor: grab;
-    border-left: 4px solid transparent;
-    height: 60px;
-    box-sizing: border-box;
-    transform: translate3d(0, 0, 0); /* 启用GPU渲染 */
-}
-
 .todo-item {
     display: flex;
     align-items: center;
@@ -1600,7 +1601,7 @@ body {
     border-radius: 8px;
     color: #888;
     font-size: 16px;
-    font-style: italic;
+    font-style: normal;
     border: 2px dashed rgba(255, 255, 255, 0.5);
     margin-bottom: 8px;
 }
@@ -1679,7 +1680,7 @@ body {
     color: #95a5a6;
 }
 
-.delete-todo {
+.todo-item .delete-todo {
     background: #e74c3c;
     color: white;
     border: none;
@@ -1689,7 +1690,7 @@ body {
     transition: background 0.3s;
 }
 
-.delete-todo:hover {
+.todo-item .delete-todo:hover {
     background: #c0392b;
 }
 
@@ -1877,7 +1878,7 @@ body {
 /* 便签栏触发器 - 调整位置使其更明显 */
 .notes-trigger {
     position: absolute;
-    left: -60px;  /* 增加左移距离，确保完全显示 */
+    left: -60px;
     top: 50%;
     transform: translateY(-50%) rotate(-90deg);
     background-color: #4CAF50;
@@ -1889,7 +1890,7 @@ body {
     white-space: nowrap;
     font-weight: bold;
     font-size: 14px;
-    z-index: 1001;  /* 确保在最上层 */
+    z-index: 1001;
     border: 2px solid #388E3C;
 }
 
@@ -2044,7 +2045,7 @@ body {
     cursor: pointer;
     border: 2px solid transparent;
     transition: transform 0.2s, border-color 0.2s;
-    transform: translate3d(0, 0, 0); /* 启用GPU渲染 */
+    transform: translate3d(0, 0, 0);
 }
 
 .color-option:hover {
@@ -2097,7 +2098,7 @@ body {
     cursor: pointer;
     border: 2px solid transparent;
     transition: transform 0.2s, border-color 0.2s;
-    transform: translate3d(0, 0, 0); /* 启用GPU渲染 */
+    transform: translate3d(0, 0, 0);
 }
 
 .color-menu-option:hover {

@@ -1,5 +1,5 @@
 // Vue应用的主入口文件
-const { createApp, ref, computed, onMounted, onUnmounted, watch, provide } = Vue;
+const { createApp, ref, computed, onMounted, onUnmounted, watch, provide, nextTick } = Vue;
 
 // 时间显示组件
 const TimeComponent = {
@@ -144,17 +144,17 @@ const PomodoroComponent = {
       
       <div class="pomodoro-settings">
         <div class="setting-group" v-if="currentMode === 'work'">
-          <label>工作时长(分钟):</label>
-          <input type="number" v-model.number="workMinutes" min="1" max="60" @change="updateWorkTime">
+          <label for="work-minutes-input">工作时长(分钟):</label>
+          <input type="number" v-model.number="workMinutes" min="1" max="60" @change="updateWorkTime" title="设置专注时长（分钟）" placeholder="专注时长" id="work-minutes-input" name="workMinutes">
         </div>
         <div class="setting-group" v-if="currentMode === 'break'">
           <label>休息时长(分钟):</label>
-          <input type="number" v-model.number="breakMinutes" min="1" max="30" @change="updateBreakTime">
+          <input type="number" v-model.number="breakMinutes" min="1" max="30" @change="updateBreakTime" title="设置休息时长（分钟）" placeholder="休息时长" id="break-minutes-input" name="breakMinutes">
         </div>
         <!-- 今日专注时长显示 -->
         <div class="focus-time-display">
-          <label>今日专注时长:</label>
-          <span class="today-focus-time">{{ formattedFocusTime }}</span>
+          <label for="today-focus-time">今日专注时长:</label>
+          <span id="today-focus-time" class="today-focus-time">{{ formattedFocusTime }}</span>
         </div>
       </div>
     </div>
@@ -216,10 +216,13 @@ const PomodoroComponent = {
     const todayFocusSeconds = ref(loadTodayFocusTime());
     const lastFocusUpdateTime = ref(null);
     
-    // 初始化时间
-    const timeLeft = ref(currentMode.value === 'work' ? workMinutes.value * 60 : breakMinutes.value * 60);
+    // 初始化时间，添加合理的默认值和边界检查
+    const defaultWorkMinutes = Math.max(1, Math.min(60, Number(workMinutes.value) || 25));
+    const defaultBreakMinutes = Math.max(1, Math.min(30, Number(breakMinutes.value) || 5));
+    
+    const timeLeft = ref(currentMode.value === 'work' ? defaultWorkMinutes * 60 : defaultBreakMinutes * 60);
     const totalTime = ref(timeLeft.value);
-    let timerInterval = null;
+    let timerInterval = null; // 用于存储requestAnimationFrame ID
 
     // 保存设置到本地存储
     const saveSettings = () => {
@@ -236,9 +239,12 @@ const PomodoroComponent = {
       if (isRunning.value && currentMode.value === 'work' && lastFocusUpdateTime.value) {
         const now = Date.now();
         const elapsedSeconds = Math.floor((now - lastFocusUpdateTime.value) / 1000);
-        if (elapsedSeconds > 0) {
-          todayFocusSeconds.value += elapsedSeconds;
+        // 确保至少过了1秒再更新，避免过于频繁的更新
+        if (elapsedSeconds >= 1) {
+          todayFocusSeconds.value = Math.max(0, todayFocusSeconds.value + elapsedSeconds);
           lastFocusUpdateTime.value = now;
+          // 实时保存专注时长到localStorage
+          saveTodayFocusTime(todayFocusSeconds.value);
         }
       }
     };
@@ -269,39 +275,77 @@ const PomodoroComponent = {
 
     // 更新工作时间
     const updateWorkTime = () => {
+      // 验证输入值
+      const validWorkMinutes = Math.max(1, Math.min(60, Number(workMinutes.value) || 25));
+      workMinutes.value = validWorkMinutes;
+      
       if (currentMode.value === 'work' && !isRunning.value) {
-        totalTime.value = workMinutes.value * 60;
-        timeLeft.value = workMinutes.value * 60;
+        totalTime.value = validWorkMinutes * 60;
+        timeLeft.value = validWorkMinutes * 60;
+        // 重置计时器状态
+        timerStartTime.value = null;
+        timeElapsed.value = 0;
       }
       saveSettings();
     };
 
     // 更新休息时间
     const updateBreakTime = () => {
+      // 验证输入值
+      const validBreakMinutes = Math.max(1, Math.min(30, Number(breakMinutes.value) || 5));
+      breakMinutes.value = validBreakMinutes;
+      
       if (currentMode.value === 'break' && !isRunning.value) {
-        totalTime.value = breakMinutes.value * 60;
-        timeLeft.value = breakMinutes.value * 60;
+        totalTime.value = validBreakMinutes * 60;
+        timeLeft.value = validBreakMinutes * 60;
+        // 重置计时器状态
+        timerStartTime.value = null;
+        timeElapsed.value = 0;
       }
       saveSettings();
     };
+
+    // 计时器开始时间戳
+    const timerStartTime = ref(null);
+    const timeElapsed = ref(0);
 
     // 开始或继续计时
     const toggleTimer = () => {
       if (!isRunning.value) {
         isRunning.value = true;
         lastFocusUpdateTime.value = Date.now();
-        timerInterval = setInterval(() => {
-          if (timeLeft.value > 0) {
-            timeLeft.value--;
-            // 每秒更新一次专注时长
-            if (currentMode.value === 'work') {
-              updateFocusTime();
-            }
-          } else {
+        timerStartTime.value = Date.now() - (timeElapsed.value * 1000);
+        
+        // 使用requestAnimationFrame实现更精确的计时
+        const updateTimer = () => {
+          if (!isRunning.value) return;
+          
+          const now = Date.now();
+          const elapsedSeconds = Math.floor((now - timerStartTime.value) / 1000);
+          timeElapsed.value = elapsedSeconds;
+          
+          // 计算剩余时间，确保不为负数
+          timeLeft.value = Math.max(0, totalTime.value - elapsedSeconds);
+          
+          // 更新专注时长
+          if (currentMode.value === 'work') {
+            updateFocusTime();
+          }
+          
+          // 检查是否计时结束
+          if (timeLeft.value <= 0) {
+            // 重置计时器状态
+            timeElapsed.value = 0;
+            timerStartTime.value = null;
             // 时间到，切换模式
             switchMode();
+            return;
           }
-        }, 1000);
+          
+          timerInterval = requestAnimationFrame(updateTimer);
+        };
+        
+        updateTimer();
       }
     };
 
@@ -311,40 +355,95 @@ const PomodoroComponent = {
         isRunning.value = false;
         updateFocusTime(); // 暂停时保存最后的专注时长
         saveTodayFocusTime(todayFocusSeconds.value);
-        clearInterval(timerInterval);
+        // 清除requestAnimationFrame
+        if (timerInterval !== null) {
+          cancelAnimationFrame(timerInterval);
+          timerInterval = null;
+        }
       }
     };
 
     // 重置计时
     const resetTimer = () => {
       pauseTimer();
+      // 重置计时器状态
+      timerStartTime.value = null;
+      timeElapsed.value = 0;
+      
+      // 验证输入值的合理性
+      const validWorkMinutes = Math.max(1, Math.min(60, Number(workMinutes.value) || 25));
+      const validBreakMinutes = Math.max(1, Math.min(30, Number(breakMinutes.value) || 5));
+      
+      // 更新有效值
       if (currentMode.value === 'work') {
-        timeLeft.value = workMinutes.value * 60;
-        totalTime.value = workMinutes.value * 60;
+        workMinutes.value = validWorkMinutes;
+        timeLeft.value = validWorkMinutes * 60;
+        totalTime.value = validWorkMinutes * 60;
       } else {
-        timeLeft.value = breakMinutes.value * 60;
-        totalTime.value = breakMinutes.value * 60;
+        breakMinutes.value = validBreakMinutes;
+        timeLeft.value = validBreakMinutes * 60;
+        totalTime.value = validBreakMinutes * 60;
       }
+      
+      // 保存更新后的设置
+      saveSettings();
     };
 
     // 切换模式
     const switchMode = () => {
       pauseTimer();
       currentMode.value = currentMode.value === 'work' ? 'break' : 'work';
-      resetTimer();
+      
+      // 重置计时器状态
+      timerStartTime.value = null;
+      timeElapsed.value = 0;
+      
+      // 根据新模式设置时间
+      if (currentMode.value === 'work') {
+        // 验证输入值
+        const validWorkMinutes = Math.max(1, Math.min(60, Number(workMinutes.value) || 25));
+        workMinutes.value = validWorkMinutes;
+        timeLeft.value = validWorkMinutes * 60;
+        totalTime.value = validWorkMinutes * 60;
+      } else {
+        // 验证输入值
+        const validBreakMinutes = Math.max(1, Math.min(30, Number(breakMinutes.value) || 5));
+        breakMinutes.value = validBreakMinutes;
+        timeLeft.value = validBreakMinutes * 60;
+        totalTime.value = validBreakMinutes * 60;
+      }
+      
       saveSettings();
     };
 
+    // 页面关闭前保存数据
+    const handleBeforeUnload = () => {
+      if (isRunning.value && currentMode.value === 'work') {
+        updateFocusTime(); // 最后更新一次专注时长
+        saveTodayFocusTime(todayFocusSeconds.value); // 保存到localStorage
+      }
+    };
+
     onMounted(() => {
-      // 组件挂载时加载今日专注时长
-      todayFocusSeconds.value = loadTodayFocusTime();
+      // 组件挂载时加载今日专注时长，确保非负数
+      todayFocusSeconds.value = Math.max(0, loadTodayFocusTime());
+      // 添加页面关闭前的保存事件监听器
+      window.addEventListener('beforeunload', handleBeforeUnload);
     });
 
     onUnmounted(() => {
-      if (timerInterval) {
-        pauseTimer(); // 确保在组件卸载前保存专注时长
-        clearInterval(timerInterval);
+      // 确保在组件卸载前暂停计时器并保存专注时长
+      if (timerInterval !== null) {
+        pauseTimer();
+        if (isRunning.value) {
+          updateFocusTime();
+          saveTodayFocusTime(todayFocusSeconds.value);
+        }
+        // 清除requestAnimationFrame
+        cancelAnimationFrame(timerInterval);
       }
+      // 移除页面关闭前的保存事件监听器
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     });
 
     return {
@@ -388,7 +487,7 @@ const TodoListComponent = {
             autocomplete="off"
             @keyup.enter="addTodo"
           >
-          <select v-model="newTodoPriority" class="priority-select">
+          <select v-model="newTodoPriority" class="priority-select" title="选择任务优先级" id="todo-priority-select" name="todoPriority">
             <option value="low">低优先级</option>
             <option value="medium" selected>中优先级</option>
             <option value="high">高优先级</option>
@@ -404,9 +503,11 @@ const TodoListComponent = {
         @scroll="handleScroll"
       >
         <!-- 空列表提示 -->
-        <li v-if="todoItems.length === 0" class="empty-todo-message">
-          暂无任务，去添加一个吧～
-        </li>
+        <ul v-if="todoItems.length === 0">
+          <li class="empty-todo-message">
+            暂无任务，去添加一个吧～
+          </li>
+        </ul>
         <!-- 虚拟滚动容器 -->
         <div 
           v-else
@@ -437,6 +538,7 @@ const TodoListComponent = {
                 class="todo-checkbox"
                 :checked="item.completed"
                 @change="toggleTodo(startIndex + virtualIndex)"
+                :title="'标记任务' + item.text + '为' + (item.completed ? '未完成' : '已完成')"
               >
               <!-- 正常显示模式 -->
                 <span 
@@ -458,8 +560,10 @@ const TodoListComponent = {
                     class="todo-edit-input"
                     @keyup.enter="saveEdit"
                     @keyup.esc="cancelEdit"
-                    ref="editInput"
+                    ref="editInputRef"
                     @click.stop
+                    placeholder="编辑任务内容..."
+                    title="编辑任务内容"
                   >
                   <button class="save-edit-btn" @click="saveEdit">保存</button>
                   <button class="cancel-edit-btn" @click="cancelEdit">取消</button>
@@ -480,13 +584,14 @@ const TodoListComponent = {
     // 编辑状态管理
     const editingIndex = ref(null);
     const editingText = ref('');
+    const editInputRef = ref(null); // 使用ref绑定到编辑输入框实例
     
     // 虚拟滚动相关状态
     const virtualListContainer = ref(null);
     const itemHeight = 60; // 每个todo项的固定高度
     const scrollTop = ref(0);
-    const visibleCount = ref(10); // 可见项数量
-    const bufferSize = ref(5); // 缓冲区大小
+    const visibleCount = ref(0); // 可见项数量（将动态计算）
+    const bufferSize = ref(8); // 缓冲区大小（增加以提升滚动体验）
     
     // 计算总高度
     const totalHeight = computed(() => {
@@ -495,15 +600,17 @@ const TodoListComponent = {
     
     // 计算起始索引
     const startIndex = computed(() => {
-      return Math.max(0, Math.floor(scrollTop.value / itemHeight) - bufferSize.value);
+      // 使用更精确的计算，确保在快速滚动时也能保持良好的性能
+      const baseIndex = Math.floor(scrollTop.value / itemHeight);
+      return Math.max(0, baseIndex - bufferSize.value);
     });
     
     // 计算结束索引
     const endIndex = computed(() => {
-      return Math.min(
-        todoItems.value.length,
-        Math.ceil((scrollTop.value + virtualListContainer.value?.clientHeight || 300) / itemHeight) + bufferSize.value
-      );
+      const containerHeight = virtualListContainer.value?.clientHeight || 300;
+      const visibleItemCount = Math.ceil(containerHeight / itemHeight);
+      const endIdx = startIndex.value + visibleItemCount + (bufferSize.value * 2); // 上下都有缓冲区
+      return Math.min(todoItems.value.length, endIdx);
     });
     
     // 计算可见项
@@ -519,10 +626,30 @@ const TodoListComponent = {
       return startIndex.value * itemHeight;
     });
     
-    // 处理滚动事件
-    const handleScroll = (event) => {
+    // 节流函数，减少高频事件处理
+    const throttle = (func, delay) => {
+      let lastCall = 0;
+      return function(...args) {
+        const now = Date.now();
+        if (now - lastCall >= delay) {
+          lastCall = now;
+          return func.apply(this, args);
+        }
+      };
+    };
+    
+    // 初始化容器高度和可见项数量
+    const initializeVirtualList = () => {
+      if (virtualListContainer.value) {
+        const containerHeight = virtualListContainer.value.clientHeight;
+        visibleCount.value = Math.ceil(containerHeight / itemHeight);
+      }
+    };
+    
+    // 处理滚动事件（使用节流优化性能）
+    const handleScroll = throttle((event) => {
       scrollTop.value = event.target.scrollTop;
-    }
+    }, 16); // 约60fps的刷新频率
 
     // 优先级名称映射
     const priorityNames = {
@@ -586,12 +713,11 @@ const TodoListComponent = {
       }
       
       // 确保输入框在DOM更新后自动聚焦
-      setTimeout(() => {
-        const editInput = document.querySelector('.todo-edit-input');
-        if (editInput) {
-          editInput.focus();
+      nextTick(() => {
+        if (editInputRef.value) {
+          editInputRef.value.focus();
         }
-      }, 0);
+      });
     };
     
     // 保存编辑
@@ -629,9 +755,10 @@ const TodoListComponent = {
       document.querySelectorAll('.todo-item').forEach(item => {
         item.classList.remove('drag-over');
       });
-      // 为当前项添加drag-over类
-      if (event.target.closest('.todo-item')) {
-        event.target.closest('.todo-item').classList.add('drag-over');
+      // 为当前项添加drag-over类 - 使用数据索引而非DOM引用
+      const currentItem = document.querySelector(`.todo-item[data-index="${index}"]`);
+      if (currentItem) {
+        currentItem.classList.add('drag-over');
       }
     };
 
@@ -675,12 +802,29 @@ const TodoListComponent = {
       });
     };
 
+    // 监听窗口大小变化的处理函数
+    const handleResize = throttle(() => {
+      initializeVirtualList();
+    }, 100);
+    
+    // 组件挂载时初始化虚拟列表
+    onMounted(() => {
+      initializeVirtualList();
+      window.addEventListener('resize', handleResize);
+    });
+    
+    // 组件卸载时移除事件监听
+    onUnmounted(() => {
+      window.removeEventListener('resize', handleResize);
+    });
+    
     return {
       todoItems,
       newTodoText,
       newTodoPriority,
       editingIndex,
       editingText,
+      editInputRef,
       virtualListContainer,
       totalHeight,
       startIndex,
@@ -916,12 +1060,7 @@ const StickyNotesComponent = {
                 <button class="delete-note-btn" @click="deleteNote(index)">×</button>
               </div>
             </div>
-            <textarea 
-              v-model="note.content"
-              class="note-textarea"
-              placeholder="输入你的想法..."
-              @input="updateNote(index)"
-            ></textarea>
+            <textarea v-model="note.content" class="note-textarea" placeholder="输入你的想法..." @input="updateNote(index)" id="note-textarea" name="noteContent"></textarea>
           </div>
         </div>
       </div>
@@ -1034,21 +1173,27 @@ const StickyNotesComponent = {
     });
     
     // 点击外部关闭颜色菜单
+    const handleClickOutside = (event) => {
+      const isColorPicker = event.target.closest('.color-picker-popup');
+      const isColorMenu = event.target.closest('.color-menu');
+      const isColorBtn = event.target.closest('.color-select-btn');
+      const isAddNoteBtn = event.target.closest('.add-note-btn');
+      
+      if (!isColorPicker && !isAddNoteBtn) {
+        showColorPicker.value = false;
+      }
+      
+      if (!isColorMenu && !isColorBtn) {
+        colorMenuVisible.value = -1;
+      }
+    };
+    
     onMounted(() => {
-      document.addEventListener('click', (event) => {
-        const isColorPicker = event.target.closest('.color-picker-popup');
-        const isColorMenu = event.target.closest('.color-menu');
-        const isColorBtn = event.target.closest('.color-select-btn');
-        const isAddNoteBtn = event.target.closest('.add-note-btn');
-        
-        if (!isColorPicker && !isAddNoteBtn) {
-          showColorPicker.value = false;
-        }
-        
-        if (!isColorMenu && !isColorBtn) {
-          colorMenuVisible.value = -1;
-        }
-      });
+      document.addEventListener('click', handleClickOutside);
+    });
+    
+    onUnmounted(() => {
+      document.removeEventListener('click', handleClickOutside);
     });
     
     return {
@@ -1287,6 +1432,10 @@ const WebsitesComponent = {
     onMounted(() => {
       window.addEventListener('click', handleClickOutside);
     });
+    
+    onUnmounted(() => {
+      window.removeEventListener('click', handleClickOutside);
+    });
 
     return {
       websites,
@@ -1381,6 +1530,7 @@ const SettingsComponent = {
                     accept=".json"
                     style="display: none"
                     @change="importData"
+                    title="选择JSON数据文件"
                   >
                   <p class="action-desc">从JSON文件恢复数据</p>
                 </div>
@@ -1467,12 +1617,26 @@ const SettingsComponent = {
     const fileInput = ref(null);
     
     // 应用信息
-    const appVersion = '1.2.1';
+    const appVersion = '1.2.2';
     const appAuthor = '思霖';
     const lastUpdated = '2025-11-22';
     
     // 更新日志数据
     const changelog = [
+      {
+        version: '1.2.2',
+        date: '2025-11-22',
+        changes: [
+          { text: '🔧 数据键名不一致修复：统一导出数据中的待办事项字段名为todoItems，解决备份恢复失效问题' },
+          { text: '🔄 虚拟滚动优化：修复与拖拽排序不兼容问题，解决跨越缓冲区时的元素定位错误' },
+          { text: '💾 番茄钟数据持久化：专注时长实时保存，避免直接关闭标签页导致时间数据丢失' },
+          { text: '📝 Todo编辑功能优化：使用Vue ref绑定，解决快速切换编辑项时的焦点错位问题' },
+          { text: '🧹 内存管理优化：修复组件卸载后全局事件监听器未清理的内存泄漏隐患' },
+          { text: '🎨 CSS选择器简化：精简样式定义，提高渲染性能' },
+          { text: '⚡ 虚拟滚动参数调优：优化可视区域计算，提升大数据量下的流畅度' },
+          { text: '⏱️ 番茄钟时间计算健壮性：增强时间计算逻辑，提高准确性' }
+        ]
+      },
       {
         version: '1.2.1',
         date: '2025-11-22',
@@ -1543,7 +1707,7 @@ const SettingsComponent = {
           exportDate: new Date().toISOString(),
           data: {
             websites: localStorage.getItem('websites') ? JSON.parse(localStorage.getItem('websites')) : [],
-            todos: localStorage.getItem('todos') ? JSON.parse(localStorage.getItem('todos')) : [],
+            todoItems: localStorage.getItem('todoItems') ? JSON.parse(localStorage.getItem('todoItems')) : [],
             searchHistory: localStorage.getItem('searchHistory') ? JSON.parse(localStorage.getItem('searchHistory')) : [],
             stickyNotes: localStorage.getItem('stickyNotes') ? JSON.parse(localStorage.getItem('stickyNotes')) : [],
             pomodoroSettings: localStorage.getItem('pomodoroSettings') ? JSON.parse(localStorage.getItem('pomodoroSettings')) : {},
@@ -1622,8 +1786,8 @@ const SettingsComponent = {
                       localStorage.setItem('websites', JSON.stringify(data.websites));
                   }
                   
-                  if (data.todos) {
-                      localStorage.setItem('todos', JSON.stringify(data.todos));
+                  if (data.todoItems) {
+                      localStorage.setItem('todoItems', JSON.stringify(data.todoItems));
                   }
                   
                   if (data.searchHistory) {
